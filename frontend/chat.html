@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>对话 - 对话古人</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%234a5568' rx='16' width='100' height='100'/><text y='.9em' x='50%' text-anchor='middle' font-size='70' font-weight='bold' fill='white'>📚</text></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a202c;
+            min-height: 100vh;
+            color: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(45, 55, 72, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .header-inner {
+            max-width: 800px;
+            width: calc(100% - 40px);
+            padding: 12px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-back {
+            color: white;
+            text-decoration: none;
+            font-size: 20px;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background 0.3s;
+        }
+
+        .header-back:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .agent-avatar {
+            width: 40px;
+            height: 40px;
+            background: #ed8936;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .agent-info h3 {
+            font-size: 16px;
+        }
+
+        .agent-info p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn.primary {
+            background: #ed8936;
+        }
+
+        .btn.primary:hover {
+            background: #dd6b20;
+        }
+
+        .btn.danger {
+            background: #e53e3e;
+        }
+
+        .btn.danger:hover {
+            background: #c53030;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 70px 20px 20px; /* top padding for fixed header */
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        .message {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-body {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .message.user .message-body {
+            align-items: flex-end;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .message.agent .message-avatar {
+            background: #ed8936;
+        }
+
+        .message.user .message-avatar {
+            background: #48bb78;
+        }
+
+        .message-content {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px 16px;
+            border-radius: 12px;
+            max-width: 70%;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: #4a5568;
+        }
+
+        .message-meta {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        /* Failed message */
+        .message.failed .message-content {
+            background: rgba(237, 137, 54, 0.3);
+            border: 1px solid #ed8936;
+        }
+
+        .message-error-wrapper {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .message-error {
+            color: #fc8181;
+            font-size: 12px;
+        }
+
+        .retry-btn {
+            background: #ed8936;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .retry-btn:hover {
+            background: #dd6b20;
+        }
+
+        /* User message error alignment */
+        .message.user .message-error-wrapper {
+            align-items: flex-end;
+        }
+
+        .message.user .retry-btn {
+            align-self: flex-end;
+        }
+
+        /* Input Area */
+        .input-area {
+            display: flex;
+            gap: 12px;
+            padding: 16px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-area textarea {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 16px;
+            resize: none;
+            min-height: 60px;
+            max-height: 150px;
+        }
+
+        .input-area textarea:focus {
+            outline: none;
+            border-color: #ed8936;
+        }
+
+        .input-area textarea::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .send-btn {
+            background: #ed8936;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            border: none;
+            font-size: 16px;
+        }
+
+        .send-btn:hover {
+            background: #dd6b20;
+        }
+
+        .send-btn:disabled {
+            background: rgba(255, 255, 255, 0.2);
+            cursor: not-allowed;
+        }
+
+        /* Strategist Mode */
+        .strategist-input {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .strategist-input.show {
+            display: flex;
+        }
+
+        .strategist-input input,
+        .strategist-input textarea {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .strategist-input label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+
+        /* Loading indicator */
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+        }
+
+        .typing-indicator.show {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            background: #ed8936;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { opacity: 0.3; }
+            30% { opacity: 1; }
+        }
+
+        /* Report Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: #2d3748;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .report-section {
+            margin-bottom: 24px;
+        }
+
+        .report-section h3 {
+            color: #ed8936;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .report-section p {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+
+        .report-questions {
+            list-style: none;
+            padding: 0;
+        }
+
+        .report-questions li {
+            padding: 8px 0;
+            color: rgba(255, 255, 255, 0.7);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Message Modal */
+        .msg-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .msg-modal-overlay.show {
+            display: flex;
+        }
+
+        .msg-modal {
+            background: #2d3748;
+            border-radius: 16px;
+            max-width: 400px;
+            width: 90%;
+            padding: 24px;
+        }
+
+        .msg-modal-title {
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .msg-modal-body {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 20px;
+        }
+
+        .msg-modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 600px) {
+            .header-inner {
+                padding: 10px 0;
+            }
+
+            .header-left {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .agent-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
+
+            .agent-info h3 {
+                font-size: 14px;
+            }
+
+            .agent-info p {
+                font-size: 11px;
+            }
+
+            .header-right {
+                gap: 8px;
+            }
+
+            .header-right .btn {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+
+            /* 移动端隐藏部分按钮，只保留结束对话 */
+            .header-right .btn:not(:nth-child(2)) {
+                display: none;
+            }
+
+            .chat-container {
+                padding-top: 70px;
+            }
+
+            .message-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
+
+            .message-content {
+                font-size: 14px;
+            }
+
+            .input-area {
+                padding: 12px;
+            }
+
+            .input-area textarea {
+                min-height: 50px;
+                font-size: 14px;
+            }
+
+            .send-btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+
+            .msg-modal {
+                width: 95%;
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="header-left">
+                <a href="/" class="header-back" title="返回首页">←</a>
+                <div class="agent-avatar" id="agentAvatar">👤</div>
+                <div class="agent-info">
+                    <h3 id="agentName">加载中...</h3>
+                    <p id="sessionMode"></p>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="btn" onclick="generateReport()" id="reportBtn">生成反思报告</button>
+                <button class="btn" onclick="endSession()">结束对话</button>
+                <button class="btn btn-danger" onclick="confirmDeleteSession()">删除会话</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="chat-container">
+        <!-- Strategist Mode Input -->
+        <div class="strategist-input" id="strategistInput">
+            <label>当前场景节点：</label>
+            <input type="text" id="situationInput" placeholder="如：项庄舞剑，意在沛公">
+            <label>你的策略建议：</label>
+            <textarea id="strategyInput" placeholder="向角色提供你的建议..."></textarea>
+            <button class="btn primary" onclick="submitStrategy()">提交策略</button>
+        </div>
+
+        <!-- Messages -->
+        <div class="messages" id="messages">
+            <div class="message agent">
+                <div class="message-avatar">👤</div>
+                <div class="message-content">正在加载对话历史...</div>
+            </div>
+        </div>
+
+        <!-- Typing Indicator -->
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+                <span></span><span></span><span></span>
+            </div>
+            <span>思考中...</span>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+            <textarea id="messageInput" placeholder="输入你的问题或回应..."
+                      onkeydown="handleKeyDown(event)"></textarea>
+            <button class="send-btn" onclick="sendMessage()" id="sendBtn">发送</button>
+        </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div class="modal-overlay" id="reportModal">
+        <div class="modal">
+            <h2>共情反思报告</h2>
+            <div id="reportContent">
+                <p>生成中...</p>
+            </div>
+            <button class="btn" onclick="closeReportModal()">关闭</button>
+        </div>
+    </div>
+
+    <!-- Message Modal -->
+    <div class="msg-modal-overlay" id="msgModal">
+        <div class="msg-modal">
+            <h3 class="msg-modal-title" id="msgModalTitle">提示</h3>
+            <div class="msg-modal-body" id="msgModalBody"></div>
+            <div class="msg-modal-buttons" id="msgModalButtons"></div>
+        </div>
+    </div>
+
+    <script src="/api/client.js"></script>
+    <script>
+        let sessionId = null;
+        let session = null;
+        let targetAgent = null;
+
+        // ========== 模态框工具函数 ==========
+
+        // 显示消息模态框
+        function showModal(options) {
+            const modal = document.getElementById('msgModal');
+            const titleEl = document.getElementById('msgModalTitle');
+            const bodyEl = document.getElementById('msgModalBody');
+            const buttonsEl = document.getElementById('msgModalButtons');
+
+            titleEl.textContent = options.title || '提示';
+            bodyEl.innerHTML = options.message || '';
+
+            buttonsEl.innerHTML = '';
+            const buttons = options.buttons || [{ text: '确定', onclick: closeModal }];
+            buttons.forEach(btn => {
+                const button = document.createElement('button');
+                button.className = btn.className || 'btn';
+                button.textContent = btn.text;
+                button.onclick = btn.onclick;
+                buttonsEl.appendChild(button);
+            });
+
+            modal.classList.add('show');
+        }
+
+        // 关闭消息模态框
+        function closeModal() {
+            document.getElementById('msgModal').classList.remove('show');
+        }
+
+        // 显示确认对话框（返回 Promise）
+        function showConfirm(title, message) {
+            return new Promise(resolve => {
+                showModal({
+                    title: title,
+                    message: message,
+                    buttons: [
+                        { text: '取消', onclick: () => { closeModal(); resolve(false); } },
+                        { text: '确定', className: 'btn primary', onclick: () => { closeModal(); resolve(true); } }
+                    ]
+                });
+            });
+        }
+
+        // 显示简单提示
+        function showAlert(title, message) {
+            showModal({
+                title: title,
+                message: message,
+                buttons: [{ text: '确定', onclick: closeModal }]
+            });
+        }
+
+        // 点击模态框外部关闭
+        document.getElementById('msgModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // ========== 业务逻辑 ==========
+        let isLoading = false;
+        let messageIdCounter = 0;
+
+        // 获取 URL 参数
+        function getQueryParam(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        // 初始化
+        async function init() {
+            sessionId = parseInt(getQueryParam('session_id'));
+            if (!sessionId) {
+                showAlert('错误', '缺少会话 ID');
+                setTimeout(() => window.location.href = '/', 1500);
+                return;
+            }
+
+            // 检查登录
+            try {
+                await wenyanAPI.checkAuth();
+            } catch (e) {
+                redirectToLogin();
+                return;
+            }
+
+            // 加载会话信息
+            try {
+                const sessions = await wenyanAPI.listSessions(100, 0);
+                session = sessions.sessions.find(s => s.id === sessionId);
+
+                if (!session) {
+                    showAlert('错误', '会话不存在');
+                    setTimeout(() => window.location.href = '/', 1500);
+                    return;
+                }
+
+                targetAgent = session.target_agent;
+                renderHeader();
+                loadMessages();
+
+                // 军师模式显示特殊输入
+                if (session.mode === 'strategist') {
+                    document.getElementById('strategistInput').classList.add('show');
+                    document.getElementById('messageInput').placeholder = '或直接向角色提问...';
+                }
+
+            } catch (e) {
+                showAlert('加载失败', e.message);
+            }
+        }
+
+        // 渲染头部
+        function renderHeader() {
+            document.getElementById('agentName').textContent = targetAgent?.name || '角色';
+            document.getElementById('agentAvatar').textContent = targetAgent?.name?.charAt(0) || '👤';
+
+            const modeText = {
+                'interview': '深度访谈',
+                'conflict': `冲突模拟 · 你扮演 ${session.user_role || '旁观者'}`,
+                'strategist': '幕后军师'
+            };
+            document.getElementById('sessionMode').textContent = modeText[session.mode] || '对话';
+        }
+
+        // 加载消息历史
+        async function loadMessages() {
+            try {
+                const data = await wenyanAPI.getSessionMessages(sessionId);
+                renderMessages(data.messages);
+            } catch (e) {
+                document.getElementById('messages').innerHTML =
+                    '<div class="message agent"><div class="message-content">加载消息失败</div></div>';
+            }
+        }
+
+        // 渲染消息
+        function renderMessages(messages) {
+            const container = document.getElementById('messages');
+
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div class="message agent">
+                        <div class="message-avatar">${targetAgent?.name?.charAt(0) || '👤'}</div>
+                        <div class="message-body">
+                            <div class="message-content">
+                                你好，我是${targetAgent?.name || '这位角色'}。有什么想问我的吗？
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = messages.map(msg => {
+                const isUser = msg.role === 'user';
+                const avatar = isUser ? '👤' : (targetAgent?.name?.charAt(0) || '👤');
+
+                return `
+                    <div class="message ${msg.role}">
+                        <div class="message-avatar">${avatar}</div>
+                        <div class="message-body">
+                            <div class="message-content">${msg.content}</div>
+                            <div class="message-meta">${msg.agent_name || (isUser ? '你' : '角色')}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 滚动到底部显示最新消息
+            scrollToBottom();
+        }
+
+        // 滚动到底部
+        function scrollToBottom() {
+            const container = document.getElementById('messages');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // 发送消息
+        async function sendMessage(retryMessage = null) {
+            const input = document.getElementById('messageInput');
+            const message = retryMessage || input.value.trim();
+
+            if (!message || isLoading) return;
+
+            isLoading = true;
+            if (!retryMessage) {
+                input.value = '';
+            }
+            document.getElementById('sendBtn').disabled = true;
+            document.getElementById('typingIndicator').classList.add('show');
+
+            const messageId = 'msg-' + (++messageIdCounter);
+            const agentMsgId = 'agent-msg-' + messageIdCounter;
+            const container = document.getElementById('messages');
+
+            // 添加用户消息到界面
+            container.innerHTML += `
+                <div class="message user" id="${messageId}">
+                    <div class="message-avatar">👤</div>
+                    <div class="message-body">
+                        <div class="message-content">${escapeHtml(message)}</div>
+                        <div class="message-meta">你</div>
+                    </div>
+                </div>
+            `;
+
+            // 添加智能体消息占位符（用于流式更新）
+            container.innerHTML += `
+                <div class="message agent" id="${agentMsgId}">
+                    <div class="message-avatar">${targetAgent?.name?.charAt(0) || '👤'}</div>
+                    <div class="message-body">
+                        <div class="message-content" id="${agentMsgId}-content"></div>
+                        <div class="message-meta" id="${agentMsgId}-meta">${targetAgent?.name || '角色'}</div>
+                    </div>
+                </div>
+            `;
+
+            // 滚动到底部
+            scrollToBottom();
+
+            let fullContent = '';
+
+            try {
+                // 使用流式 API
+                await wenyanAPI.chatStream(
+                    sessionId,
+                    message,
+                    // onChunk: 每次收到内容片段
+                    (chunk) => {
+                        fullContent += chunk;
+                        const contentEl = document.getElementById(`${agentMsgId}-content`);
+                        if (contentEl) {
+                            contentEl.innerHTML = escapeHtml(fullContent);
+                            scrollToBottom();
+                        }
+                    },
+                    // onDone: 流式完成
+                    (data) => {
+                        // 更新元数据
+                        const metaEl = document.getElementById(`${agentMsgId}-meta`);
+                        if (metaEl) {
+                            metaEl.textContent = data.agent_name || targetAgent?.name || '角色';
+                        }
+                    },
+                    // onError: 错误
+                    (error) => {
+                        // 移除智能体消息占位符
+                        const agentMsgEl = document.getElementById(agentMsgId);
+                        if (agentMsgEl) {
+                            agentMsgEl.remove();
+                        }
+                        // 标记用户消息为失败
+                        const msgEl = document.getElementById(messageId);
+                        if (msgEl) {
+                            msgEl.classList.add('failed');
+                            const bodyDiv = msgEl.querySelector('.message-body');
+                            if (bodyDiv) {
+                                bodyDiv.innerHTML += `
+                                    <div class="message-error-wrapper">
+                                        <div class="message-error">发送失败: ${error}</div>
+                                        <button class="retry-btn" onclick="retryMessage('${messageId}', '${escapeHtml(message)}')">重新发送</button>
+                                    </div>
+                                `;
+                            }
+                        }
+                    }
+                );
+
+            } catch (e) {
+                // 移除智能体消息占位符
+                const agentMsgEl = document.getElementById(agentMsgId);
+                if (agentMsgEl) {
+                    agentMsgEl.remove();
+                }
+                // 标记消息为失败状态
+                const msgEl = document.getElementById(messageId);
+                if (msgEl) {
+                    msgEl.classList.add('failed');
+                    const bodyDiv = msgEl.querySelector('.message-body');
+                    if (bodyDiv) {
+                        bodyDiv.innerHTML += `
+                            <div class="message-error-wrapper">
+                                <div class="message-error">发送失败: ${e.message}</div>
+                                <button class="retry-btn" onclick="retryMessage('${messageId}', '${escapeHtml(message)}')">重新发送</button>
+                            </div>
+                        `;
+                    }
+                }
+            } finally {
+                isLoading = false;
+                document.getElementById('sendBtn').disabled = false;
+                document.getElementById('typingIndicator').classList.remove('show');
+            }
+        }
+
+        // 重新发送失败的消息
+        function retryMessage(messageId, message) {
+            // 移除失败的消息
+            const msgEl = document.getElementById(messageId);
+            if (msgEl) {
+                msgEl.remove();
+            }
+            // 重新发送
+            sendMessage(message);
+        }
+
+        // HTML 转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 处理键盘事件
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // 军师模式提交策略
+        async function submitStrategy() {
+            const situation = document.getElementById('situationInput').value.trim();
+            const strategy = document.getElementById('strategyInput').value.trim();
+
+            if (!situation || !strategy || isLoading) return;
+
+            isLoading = true;
+            document.getElementById('typingIndicator').classList.add('show');
+
+            const messageId = 'strategy-' + (++messageIdCounter);
+            const container = document.getElementById('messages');
+
+            // 先添加用户消息
+            container.innerHTML += `
+                <div class="message user" id="${messageId}">
+                    <div class="message-avatar">👤</div>
+                    <div class="message-body">
+                        <div class="message-content">[军师建议] ${escapeHtml(situation)} → ${escapeHtml(strategy)}</div>
+                        <div class="message-meta">你（军师）</div>
+                    </div>
+                </div>
+            `;
+
+            try {
+                const response = await wenyanAPI.strategize(
+                    sessionId,
+                    targetAgent.id,
+                    situation,
+                    strategy
+                );
+
+                // 清空输入
+                document.getElementById('situationInput').value = '';
+                document.getElementById('strategyInput').value = '';
+
+                // 添加回复
+                container.innerHTML += `
+                    <div class="message agent">
+                        <div class="message-avatar">${targetAgent?.name?.charAt(0) || '👤'}</div>
+                        <div class="message-body">
+                            <div class="message-content">${escapeHtml(response.agent_response)}</div>
+                            <div class="message-meta">${targetAgent?.name}</div>
+                        </div>
+                    </div>
+                `;
+
+            } catch (e) {
+                // 标记失败
+                const msgEl = document.getElementById(messageId);
+                if (msgEl) {
+                    msgEl.classList.add('failed');
+                    const bodyDiv = msgEl.querySelector('.message-body');
+                    if (bodyDiv) {
+                        bodyDiv.innerHTML += `
+                            <div class="message-error-wrapper">
+                                <div class="message-error">提交失败: ${e.message}</div>
+                                <button class="retry-btn" onclick="retryStrategy('${messageId}', '${escapeHtml(situation)}', '${escapeHtml(strategy)}')">重新提交</button>
+                            </div>
+                        `;
+                    }
+                }
+            } finally {
+                isLoading = false;
+                document.getElementById('typingIndicator').classList.remove('show');
+            }
+        }
+
+        // 重新提交策略
+        function retryStrategy(messageId, situation, strategy) {
+            const msgEl = document.getElementById(messageId);
+            if (msgEl) {
+                msgEl.remove();
+            }
+            // 恢复输入框内容并重新提交
+            document.getElementById('situationInput').value = situation;
+            document.getElementById('strategyInput').value = strategy;
+            submitStrategy();
+        }
+
+        // 生成反思报告（异步）
+        let reportPollingTimer = null;
+
+        async function generateReport() {
+            document.getElementById('reportModal').classList.add('show');
+            document.getElementById('reportContent').innerHTML = '<p>正在创建报告...</p>';
+
+            try {
+                // 创建报告
+                const createResult = await wenyanAPI.createReport(sessionId);
+                const reportId = createResult.report_id;
+
+                // 开始轮询状态
+                document.getElementById('reportContent').innerHTML = '<p>正在生成报告...</p>';
+                pollReportStatus(reportId);
+
+            } catch (e) {
+                document.getElementById('reportContent').innerHTML =
+                    `<p style="color: #fc8181;">创建失败: ${e.message}</p>`;
+            }
+        }
+
+        // 轮询报告状态
+        async function pollReportStatus(reportId) {
+            try {
+                const report = await wenyanAPI.getReport(reportId);
+
+                if (report.status === 'completed') {
+                    // 生成完成，显示报告
+                    renderReport(report);
+                    return;
+                }
+
+                if (report.status === 'failed') {
+                    // 生成失败
+                    document.getElementById('reportContent').innerHTML =
+                        `<p style="color: #fc8181;">生成失败: ${report.error_message || '未知错误'}</p>`;
+                    return;
+                }
+
+                // pending 或 processing，继续轮询
+                if (report.status === 'pending') {
+                    document.getElementById('reportContent').innerHTML = '<p>正在准备生成...</p>';
+                } else {
+                    document.getElementById('reportContent').innerHTML = '<p>正在生成报告...</p>';
+                }
+
+                // 2秒后再次查询
+                reportPollingTimer = setTimeout(() => pollReportStatus(reportId), 2000);
+
+            } catch (e) {
+                document.getElementById('reportContent').innerHTML =
+                    `<p style="color: #fc8181;">查询失败: ${e.message}</p>`;
+            }
+        }
+
+        // 渲染报告
+        function renderReport(report) {
+            const questionsHtml = report.reflection_questions?.map(q => `<li>${q}</li>`).join('') || '';
+
+            document.getElementById('reportContent').innerHTML = `
+                <div class="report-section">
+                    <h3>核心困境</h3>
+                    <p>${report.core_dilemma || '暂无'}</p>
+                </div>
+                <div class="report-section">
+                    <h3>决策逻辑</h3>
+                    <p>${report.decision_logic || '暂无'}</p>
+                </div>
+                <div class="report-section">
+                    <h3>情感解读</h3>
+                    <p>${report.emotional_analysis || '暂无'}</p>
+                </div>
+                <div class="report-section">
+                    <h3>历史背景</h3>
+                    <p>${report.historical_context || '暂无'}</p>
+                </div>
+                <div class="report-section">
+                    <h3>反思问题</h3>
+                    <ul class="report-questions">${questionsHtml}</ul>
+                </div>
+                <div class="report-section">
+                    <h3>完整分析</h3>
+                    <p>${report.report_content || '暂无'}</p>
+                </div>
+            `;
+        }
+
+        // 关闭报告弹窗
+        function closeReportModal() {
+            // 停止轮询
+            if (reportPollingTimer) {
+                clearTimeout(reportPollingTimer);
+                reportPollingTimer = null;
+            }
+            document.getElementById('reportModal').classList.remove('show');
+        }
+
+        // 结束对话
+        async function endSession() {
+            const confirmed = await showConfirm('结束确认', '确定要结束本次对话吗？');
+            if (confirmed) {
+                window.location.href = '/';
+            }
+        }
+
+        // 确认删除会话
+        async function confirmDeleteSession() {
+            const confirmed = await showConfirm('删除确认', '确定要删除本次会话吗？删除后将无法恢复所有对话记录。');
+            if (confirmed) {
+                await deleteSession();
+            }
+        }
+
+        // 删除会话
+        async function deleteSession() {
+            try {
+                await wenyanAPI.deleteSession(sessionId);
+                showAlert('成功', '会话已删除');
+                // 根据来源决定跳转位置
+                const from = getQueryParam('from');
+                setTimeout(() => {
+                    if (from === 'sessions') {
+                        window.location.href = '/sessions.html';
+                    } else {
+                        window.location.href = '/';
+                    }
+                }, 1500);
+            } catch (e) {
+                showAlert('删除失败', e.message);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

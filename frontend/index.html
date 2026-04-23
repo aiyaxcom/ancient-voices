@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>古人之声 - 历史人物沉浸式对话</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%234a5568' rx='16' width='100' height='100'/><text y='.9em' x='50%' text-anchor='middle' font-size='70' font-weight='bold' fill='white'>📜</text></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .header {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            background: rgba(45, 55, 72, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex; justify-content: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .header-inner {
+            max-width: 1200px; width: calc(100% - 40px); padding: 16px 0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: white; }
+        .logo-icon { font-size: 32px; }
+        .logo-text { font-size: 22px; font-weight: 600; }
+        .logo-subtitle { font-size: 12px; color: rgba(255, 255, 255, 0.6); }
+        .btn-nav {
+            background: rgba(255, 255, 255, 0.1); color: white;
+            padding: 10px 20px; border-radius: 8px; text-decoration: none;
+            font-size: 14px; transition: background 0.3s; border: none; cursor: pointer;
+        }
+        .btn-nav:hover { background: rgba(255, 255, 255, 0.2); }
+        .btn-nav.primary { background: #ed8936; }
+        .btn-nav.primary:hover { background: #dd6b20; }
+        .main { padding: 100px 20px 40px; max-width: 1200px; margin: 0 auto; width: 100%; }
+        .hero { text-align: center; padding: 40px 20px; color: white; }
+        .hero h1 { font-size: 36px; margin-bottom: 16px; }
+        .hero p { font-size: 18px; color: rgba(255, 255, 255, 0.8); max-width: 600px; margin: 0 auto; }
+        .section { margin-top: 40px; }
+        .section-title { color: white; font-size: 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+        .section-title .badge { background: rgba(255, 255, 255, 0.2); padding: 4px 12px; border-radius: 12px; font-size: 14px; }
+        .timeline-wrapper { display: flex; gap: 24px; position: relative; }
+        .era-nav {
+            position: sticky; top: 100px; width: 140px; flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.05); border-radius: 12px;
+            padding: 16px 0; border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: calc(100vh - 120px); overflow-y: auto;
+        }
+        .era-nav-title { color: rgba(255, 255, 255, 0.5); font-size: 12px; text-align: center; padding: 8px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 8px; }
+        .era-nav-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 16px; color: rgba(255, 255, 255, 0.7); text-decoration: none;
+            font-size: 14px; transition: all 0.3s; border-left: 3px solid transparent; cursor: pointer;
+        }
+        .era-nav-item:hover { color: white; background: rgba(255, 255, 255, 0.1); }
+        .era-nav-item.active { color: #ed8936; background: rgba(237, 137, 54, 0.1); border-left-color: #ed8936; }
+        .era-nav-item .era-count { background: rgba(255, 255, 255, 0.2); color: rgba(255, 255, 255, 0.6); padding: 2px 6px; border-radius: 10px; font-size: 11px; }
+        .era-nav-item.active .era-count { background: rgba(237, 137, 54, 0.2); color: #ed8936; }
+        .timeline-content { flex: 1; min-width: 0; }
+        .timeline-container { position: relative; padding-left: 40px; }
+        .timeline-line { position: absolute; left: 12px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, #ed8936, rgba(237, 137, 54, 0.3)); }
+        .timeline-item { position: relative; margin-bottom: 32px; }
+        .timeline-marker { position: absolute; left: -28px; top: 20px; width: 12px; height: 12px; background: #ed8936; border-radius: 50%; box-shadow: 0 0 0 4px rgba(237, 137, 54, 0.2); z-index: 1; }
+        .scenario-card {
+            background: rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px;
+            cursor: pointer; transition: all 0.3s; border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 600px;
+        }
+        .scenario-card:hover { background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.2); transform: translateY(-2px); }
+        .scenario-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .scenario-title { color: white; font-size: 18px; font-weight: 600; }
+        .scenario-era { color: #ed8936; font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+        .era-year { font-weight: 500; }
+        .era-dot { width: 4px; height: 4px; background: rgba(255, 255, 255, 0.5); border-radius: 50%; }
+        .scenario-source { color: rgba(255, 255, 255, 0.5); font-size: 12px; }
+        .scenario-desc { color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
+        .scenario-footer { display: flex; justify-content: space-between; align-items: center; }
+        .agent-count { color: rgba(255, 255, 255, 0.6); font-size: 14px; }
+        .agent-count span { color: #ed8936; }
+        .official-badge { background: #ed8936; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+        .empty-state { text-align: center; padding: 60px 20px; color: rgba(255, 255, 255, 0.6); }
+        .loading { text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.6); }
+        .footer { text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.5); font-size: 14px; }
+        @media (max-width: 768px) {
+            .header-inner { flex-wrap: wrap; padding: 12px 0; }
+            .logo-icon { font-size: 24px; }
+            .logo-text { font-size: 18px; }
+            .logo-subtitle { display: none; }
+            .timeline-wrapper { flex-direction: column; }
+            .era-nav { position: relative; top: 0; width: 100%; max-height: none; margin-bottom: 20px; order: -1; }
+            .timeline-container { padding-left: 28px; }
+            .timeline-line { left: 8px; }
+            .timeline-marker { left: -20px; width: 10px; height: 10px; }
+            .scenario-card { max-width: none; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">📜</span>
+                <div>
+                    <span class="logo-text">古人之声</span>
+                    <span class="logo-subtitle">历史人物沉浸式对话</span>
+                </div>
+            </a>
+            <div>
+                <a href="/create.html" class="btn-nav primary">创建场景</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="hero">
+            <h1>穿越时空，与历史对话</h1>
+            <p>通过沉浸式对话，深入理解历史人物的内心世界。不再是机械翻译，而是真正走进古人的思想与情感。</p>
+        </div>
+
+        <section class="section">
+            <h2 class="section-title">
+                历史时间轴
+                <span class="badge" id="officialCount">0</span>
+            </h2>
+            <div class="timeline-wrapper">
+                <nav class="era-nav">
+                    <div class="era-nav-title">朝代导航</div>
+                    <div id="eraNavList"><div class="loading">加载中...</div></div>
+                </nav>
+                <div class="timeline-content">
+                    <div class="timeline-container" id="officialTimeline">
+                        <div class="timeline-line"></div>
+                        <div class="loading">加载中...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">古人之声 - Ancient Voices</footer>
+
+    <script src="/api/client.js"></script>
+    <script>
+        async function loadScenarios() {
+            try {
+                const data = await wenyanAPI.listScenarios();
+                const timeline = document.getElementById('officialTimeline');
+                const scenarios = data.official.concat(data.user_created).sort((a, b) => (a.era_year || 0) - (b.era_year || 0));
+                document.getElementById('officialCount').textContent = scenarios.length;
+
+                if (scenarios.length > 0) {
+                    renderEraNav(scenarios);
+                    timeline.innerHTML = '<div class="timeline-line"></div>' + scenarios.map(renderTimelineItem).join('');
+                } else {
+                    timeline.innerHTML = '<div class="timeline-line"></div><div class="empty-state"><p>暂无场景</p></div>';
+                    document.getElementById('eraNavList').innerHTML = '<div class="empty-state"><p>暂无数据</p></div>';
+                }
+            } catch (e) {
+                document.getElementById('officialTimeline').innerHTML = '<div class="timeline-line"></div><div class="empty-state"><p>加载失败，请刷新重试</p></div>';
+                console.error('加载场景失败:', e);
+            }
+        }
+
+        function renderEraNav(scenarios) {
+            const eraMap = new Map();
+            scenarios.forEach(s => {
+                const eraName = s.era_name || '其他';
+                if (!eraMap.has(eraName)) eraMap.set(eraName, { name: eraName, count: 0, minYear: s.era_year || 0 });
+                eraMap.get(eraName).count++;
+            });
+            const eras = Array.from(eraMap.values()).sort((a, b) => a.minYear - b.minYear);
+            document.getElementById('eraNavList').innerHTML = eras.map((era, i) => `
+                <a class="era-nav-item ${i === 0 ? 'active' : ''}" data-era="${era.name}" onclick="scrollToEra('${era.name}')">
+                    <span>${era.name}</span>
+                    <span class="era-count">${era.count}</span>
+                </a>
+            `).join('');
+        }
+
+        function scrollToEra(eraName) {
+            document.querySelectorAll('.era-nav-item').forEach(item => item.classList.toggle('active', item.dataset.era === eraName));
+            const firstItem = document.querySelector(`.timeline-item[data-era="${eraName}"]`);
+            if (firstItem) firstItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function renderTimelineItem(s) {
+            let eraDisplay = '';
+            if (s.era_year) {
+                const yearStr = s.era_year < 0 ? `公元前${Math.abs(s.era_year)}年` : `公元${s.era_year}年`;
+                eraDisplay = `<span class="era-year">${yearStr}</span>`;
+                if (s.era_name) eraDisplay += `<span class="era-dot"></span><span>${s.era_name}</span>`;
+            }
+            const eraName = s.era_name || '其他';
+            return `
+                <div class="timeline-item" data-era="${eraName}" onclick="enterScenario(${s.id})">
+                    <div class="timeline-marker"></div>
+                    <div class="scenario-card">
+                        <div class="scenario-header">
+                            <div>
+                                <div class="scenario-title">${s.title}</div>
+                                ${eraDisplay ? `<div class="scenario-era">${eraDisplay}</div>` : `<div class="scenario-source">${s.source_work || '历史记载'}</div>`}
+                            </div>
+                            ${s.is_official ? '<span class="official-badge">官方</span>' : ''}
+                        </div>
+                        <div class="scenario-desc">${s.description || '暂无描述'}</div>
+                        <div class="scenario-footer">
+                            <div class="agent-count"><span>${s.agent_count}</span> 个角色可对话</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function enterScenario(scenarioId) {
+            window.location.href = `/scenario.html?id=${scenarioId}`;
+        }
+
+        loadScenarios();
+    </script>
+</body>
+</html>

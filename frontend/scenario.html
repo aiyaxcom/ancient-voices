@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>场景详情 - 对话古人</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%234a5568' rx='16' width='100' height='100'/><text y='.9em' x='50%' text-anchor='middle' font-size='70' font-weight='bold' fill='white'>📚</text></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(45, 55, 72, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header-inner {
+            max-width: 800px;
+            width: calc(100% - 40px);
+            padding: 16px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .header-inner a {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .main {
+            padding: 80px 20px 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .scenario-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .scenario-title {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .scenario-source {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .scenario-desc {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+
+        .section-title {
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+
+        .agent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .agent-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .agent-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #ed8936;
+            transform: translateY(-2px);
+        }
+
+        .agent-card.selected {
+            background: rgba(237, 137, 54, 0.2);
+            border-color: #ed8936;
+            box-shadow: 0 4px 12px rgba(237, 137, 54, 0.3);
+        }
+
+        .agent-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .agent-personality {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .mode-section {
+            margin-top: 32px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .mode-options {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .mode-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            text-align: center;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .mode-btn.selected {
+            background: #ed8936;
+            border-color: #ed8936;
+        }
+
+        .mode-desc {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 8px;
+        }
+
+        .start-btn {
+            display: block;
+            background: #ed8936;
+            color: white;
+            padding: 16px 32px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 18px;
+            margin-top: 24px;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+        }
+
+        .start-btn:hover {
+            background: #dd6b20;
+        }
+
+        .start-btn:disabled {
+            background: rgba(255, 255, 255, 0.2);
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #fc8181;
+        }
+
+        /* Conflict mode role selector */
+        .role-selector {
+            display: none;
+            margin-top: 16px;
+        }
+
+        .role-selector.show {
+            display: block;
+        }
+
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .role-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .role-btn.selected {
+            background: #48bb78;
+            border-color: #48bb78;
+        }
+
+        /* Message Modal */
+        .msg-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .msg-modal-overlay.show {
+            display: flex;
+        }
+
+        .msg-modal {
+            background: #2d3748;
+            border-radius: 16px;
+            max-width: 400px;
+            width: 90%;
+            padding: 24px;
+        }
+
+        .msg-modal-title {
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .msg-modal-body {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 20px;
+        }
+
+        .msg-modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 600px) {
+            .header-inner {
+                padding: 12px 0;
+            }
+
+            .header-inner a {
+                font-size: 14px;
+            }
+
+            .scenario-info {
+                padding: 16px;
+            }
+
+            .scenario-title {
+                font-size: 22px;
+            }
+
+            .agent-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mode-options {
+                flex-direction: column;
+            }
+
+            .role-options {
+                flex-direction: column;
+            }
+
+            .role-btn {
+                width: 100%;
+            }
+
+            .msg-modal {
+                width: 95%;
+                padding: 16px;
+            }
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: rgba(255, 255, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <a href="/">
+                <span>📚</span>
+                <span>返回首页</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="main">
+        <div id="content">
+            <div class="loading">加载中...</div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <a href="/">对话古人</a>
+    </footer>
+
+    <!-- Message Modal -->
+    <div class="msg-modal-overlay" id="msgModal">
+        <div class="msg-modal">
+            <h3 class="msg-modal-title" id="msgModalTitle">提示</h3>
+            <div class="msg-modal-body" id="msgModalBody"></div>
+            <div class="msg-modal-buttons" id="msgModalButtons"></div>
+        </div>
+    </div>
+
+    <script src="/api/client.js"></script>
+    <script>
+        let scenarioId = null;
+        let scenario = null;
+        let agents = [];
+        let selectedAgentId = null;
+
+        // ========== 模态框工具函数 ==========
+
+        // 显示消息模态框
+        function showModal(options) {
+            const modal = document.getElementById('msgModal');
+            const titleEl = document.getElementById('msgModalTitle');
+            const bodyEl = document.getElementById('msgModalBody');
+            const buttonsEl = document.getElementById('msgModalButtons');
+
+            titleEl.textContent = options.title || '提示';
+            bodyEl.innerHTML = options.message || '';
+
+            buttonsEl.innerHTML = '';
+            const buttons = options.buttons || [{ text: '确定', onclick: closeModal }];
+            buttons.forEach(btn => {
+                const button = document.createElement('button');
+                button.className = btn.className || 'btn';
+                button.textContent = btn.text;
+                button.onclick = btn.onclick;
+                buttonsEl.appendChild(button);
+            });
+
+            modal.classList.add('show');
+        }
+
+        // 关闭消息模态框
+        function closeModal() {
+            document.getElementById('msgModal').classList.remove('show');
+        }
+
+        // 显示简单提示
+        function showAlert(title, message) {
+            showModal({
+                title: title,
+                message: message,
+                buttons: [{ text: '确定', onclick: closeModal }]
+            });
+        }
+
+        // 点击模态框外部关闭
+        document.getElementById('msgModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // ========== 业务逻辑 ==========
+        let selectedMode = 'interview';
+        let selectedUserRole = null;
+
+        // 获取 URL 参数
+        function getQueryParam(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        // 初始化
+        async function init() {
+            scenarioId = parseInt(getQueryParam('id'));
+            if (!scenarioId) {
+                showError('缺少场景 ID');
+                return;
+            }
+
+            // 检查登录
+            try {
+                await wenyanAPI.checkAuth();
+            } catch (e) {
+                redirectToLogin();
+                return;
+            }
+
+            // 加载场景详情
+            try {
+                scenario = await wenyanAPI.getScenario(scenarioId);
+                agents = scenario.agents || [];
+                renderContent();
+            } catch (e) {
+                showError('加载场景失败: ' + e.message);
+            }
+        }
+
+        // 显示错误
+        function showError(message) {
+            document.getElementById('content').innerHTML =
+                `<div class="error">${message}</div>`;
+        }
+
+        // 渲染内容
+        function renderContent() {
+            const html = `
+                <div class="scenario-info">
+                    <h1 class="scenario-title">${scenario.title}</h1>
+                    <div class="scenario-source">${scenario.source_work || '历史记载'}</div>
+                    <div class="scenario-desc">${scenario.description || '暂无描述'}</div>
+                </div>
+
+                <h2 class="section-title">选择对话角色</h2>
+                <div class="agent-grid">
+                    ${agents.map(a => `
+                        <div class="agent-card ${selectedAgentId === a.id ? 'selected' : ''}"
+                             onclick="selectAgent(${a.id})"
+                             id="agent-${a.id}">
+                            <div class="agent-name">${a.name}</div>
+                            <div class="agent-personality">${a.personality}</div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="mode-section">
+                    <h2 class="section-title">选择对话模式</h2>
+                    <div class="mode-options">
+                        <div class="mode-btn ${selectedMode === 'interview' ? 'selected' : ''}"
+                             onclick="selectMode('interview')">
+                            <div>深度访谈</div>
+                            <div class="mode-desc">一对一对话，了解角色视角</div>
+                        </div>
+                        <div class="mode-btn ${selectedMode === 'conflict' ? 'selected' : ''}"
+                             onclick="selectMode('conflict')">
+                            <div>冲突模拟</div>
+                            <div class="mode-desc">扮演角色，改变历史走向</div>
+                        </div>
+                        <div class="mode-btn ${selectedMode === 'strategist' ? 'selected' : ''}"
+                             onclick="selectMode('strategist')">
+                            <div>幕后军师</div>
+                            <div class="mode-desc">为角色提供策略建议</div>
+                        </div>
+                    </div>
+
+                    <!-- 冲突模式：选择用户扮演的角色 -->
+                    <div class="role-selector" id="roleSelector">
+                        <label>你扮演的角色：</label>
+                        <div class="role-grid">
+                            ${agents.map(a => `
+                                <div class="role-btn ${selectedUserRole === a.name ? 'selected' : ''}"
+                                     onclick="selectRole('${a.name}')">
+                                    ${a.name}
+                                </div>
+                            `).join('')}
+                            <div class="role-btn ${selectedUserRole === '旁观者' ? 'selected' : ''}"
+                                 onclick="selectRole('旁观者')">
+                                旁观者
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="start-btn" onclick="startChat()" id="startBtn"
+                        ${!selectedAgentId ? 'disabled' : ''}>
+                    开始对话
+                </button>
+            `;
+            document.getElementById('content').innerHTML = html;
+        }
+
+        // 选择智能体
+        function selectAgent(agentId) {
+            selectedAgentId = agentId;
+            // 更新 UI
+            document.querySelectorAll('.agent-card').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.getElementById('agent-' + agentId).classList.add('selected');
+            document.getElementById('startBtn').disabled = false;
+        }
+
+        // 选择模式
+        function selectMode(mode) {
+            selectedMode = mode;
+            // 更新 UI
+            document.querySelectorAll('.mode-btn').forEach(el => {
+                el.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+
+            // 显示角色选择器（仅冲突模式）
+            const roleSelector = document.getElementById('roleSelector');
+            if (mode === 'conflict') {
+                roleSelector.classList.add('show');
+            } else {
+                roleSelector.classList.remove('show');
+            }
+        }
+
+        // 选择用户扮演的角色
+        function selectRole(role) {
+            selectedUserRole = role;
+            document.querySelectorAll('.role-btn').forEach(el => {
+                el.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+        }
+
+        // 开始对话
+        async function startChat() {
+            if (!selectedAgentId) {
+                showAlert('提示', '请先选择对话角色');
+                return;
+            }
+
+            if (selectedMode === 'conflict' && !selectedUserRole) {
+                showAlert('提示', '请选择你扮演的角色');
+                return;
+            }
+
+            try {
+                const sessionData = {
+                    scenario_id: scenarioId,
+                    mode: selectedMode,
+                    target_agent_id: selectedAgentId,
+                };
+
+                if (selectedMode === 'conflict') {
+                    sessionData.user_role = selectedUserRole;
+                }
+
+                const session = await wenyanAPI.createSession(sessionData);
+                window.location.href = `/chat.html?session_id=${session.id}`;
+            } catch (e) {
+                showAlert('创建失败', e.message);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
